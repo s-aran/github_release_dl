@@ -1,0 +1,9 @@
+{
+	"authors": [
+		"s.aran"
+	],
+	"copyright": "Copyright(C) 2021 s.aran",
+	"description": "A minimal D application.",
+	"license": "proprietary",
+	"name": "github_release_dl"
+}

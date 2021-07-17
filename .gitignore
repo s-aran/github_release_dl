@@ -1,0 +1,15 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/github_release_dl
+github_release_dl.so
+github_release_dl.dylib
+github_release_dl.dll
+github_release_dl.a
+github_release_dl.lib
+github_release_dl-test-*
+*.exe
+*.o
+*.obj
+*.lst
