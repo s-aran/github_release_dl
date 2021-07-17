@@ -157,9 +157,12 @@ class FileUtils
 {
 	const string BaseDirectory = "tmp";
 
-	private bool create_directory_if_not_exists(string pathname)
+	static bool mkdir_if_not_exists(string pathname)
 	{
-		mkdirRecurse(pathname);
+		if (!exists(pathname))
+		{
+			mkdirRecurse(pathname);
+		}
 		return true;
 	}
 
@@ -206,15 +209,8 @@ class FileUtils
 
 void main()
 {
-	// JSONValue[string] document = parseJSON(`{
-	// "vim_win32_installer" : 
-	// 	{
-	// 		"repository" : "vim/vim-win32-installer",
-	// 		"install" : "2013-02-27T19:35:32Z",
-	// 		"filename" : "^gvim_.*_x64.zip$",
-	// 		"destination": "M:\\app\\"
-	// 	}
-	// }`).object;
+	writeln("github release downloader");
+	writefln("version: %s", Version);
 
 	auto package_configure = new PackageConfigure(Config.config_filepath);
 	package_configure.load();
@@ -225,14 +221,14 @@ void main()
 		auto repository = info.repository;
 		auto install = info.install;
 		auto filename = info.filename;
-		auto destination = info.destination;
+		const auto destination = info.destination;
 
 		auto github = new GitHub();
 		JSONValue[] res_doc = github.get_releases(repository);
 
 		auto latest_release = res_doc[0];
 		JSONValue[string] e = latest_release.object;
-		auto published_at = PackageConfigure.string_to_datetime(e["published_at"].str);
+		const auto published_at = PackageConfigure.string_to_datetime(e["published_at"].str);
 		JSONValue[] assets = e["assets"].array;
 		foreach (a; assets)
 		{
@@ -240,7 +236,7 @@ void main()
 			string name = n["name"].str;
 
 			string dir = "tmp";
-			auto match = matchFirst(name, filename);
+			const auto match = matchFirst(name, filename);
 
 			// | match | newer | !exists | download |
 			// |-------|-------|---------|----------|
@@ -262,14 +258,14 @@ void main()
 					break;
 				}
 
-				if (!exists(dir))
-				{
-					mkdir(dir);
-				}
+				FileUtils.mkdir_if_not_exists(dir);
 
 				string download_url = n["browser_download_url"].str;
 				github.download(download_url, dl_dest_path);
-				FileUtils.extract_zip(dl_dest_path, dir);
+
+				auto extract_to = destination.length > 0 ? destination : dir;
+				FileUtils.mkdir_if_not_exists(extract_to);
+				FileUtils.extract_zip(dl_dest_path, extract_to);
 			}
 		}
 
