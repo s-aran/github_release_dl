@@ -34,7 +34,6 @@ class Config
 class PackageConfigure
 {
 	private string path;
-	JSONValue[string] json;
 	Package[] packages;
 
 	this(string filepath)
@@ -53,8 +52,8 @@ class PackageConfigure
 		auto content = file.rawRead(new char[file.size]);
 		file.close();
 
-		this.json = parseJSON(content).object;
-		this.build(this.json);
+		auto json = parseJSON(content).object;
+		this.build(json);
 	}
 
 	void save()
@@ -64,9 +63,8 @@ class PackageConfigure
 			throw new Exception("File not found: " ~ this.path);
 		}
 
-		auto json = this.to_json(this.packages);
-
 		auto file = new File(this.path, "w");
+		auto json = this.to_json(this.packages);
 		file.write(json.toPrettyString());
 		file.close();
 	}
@@ -100,7 +98,7 @@ class PackageConfigure
 
 	private JSONValue to_json(Package[] packages)
 	{
-			auto result = JSONValue((JSONValue[string]).init);
+		auto result = JSONValue((JSONValue[string]).init);
 
 		foreach (p; packages)
 		{
@@ -118,12 +116,92 @@ class PackageConfigure
 		return result;
 	}
 
-	private DateTime string_to_datetime(string s)
+	static DateTime string_to_datetime(string s)
 	{
 		// remove 'Z' (YYYY-MM-DDThh:mm:ssZ -> YYYY-MM-DDThh:mm:ss)
 		return s.length > 0 ? DateTime.fromISOExtString(s.replace("Z", "")) : DateTime();
 	}
 
+}
+
+class GitHub
+{
+	private string create_url(string repository)
+	{
+		return join(["https:/", "api.github.com/repos", repository, "releases"], "/");
+	}
+
+	JSONValue[] get_releases(string repository)
+	{
+		auto client = HTTP();
+		client.addRequestHeader("Accept", "application/vnd.github.v3+json");
+
+		auto release_url = this.create_url(repository);
+		char[] res = get(release_url, client);
+		string sres = to!string(res);
+
+		return parseJSON(sres).array;
+	}
+
+	bool download(string browser_download_url, string to)
+	{
+		auto client = HTTP();
+		write(browser_download_url);
+		std.net.curl.download(browser_download_url, to, client);
+		writeln(" ... Done");
+		return true;
+	}
+}
+
+class FileUtils
+{
+	const string BaseDirectory = "tmp";
+
+	private bool create_directory_if_not_exists(string pathname)
+	{
+		mkdirRecurse(pathname);
+		return true;
+	}
+
+	static bool extract_zip(string path, string to)
+	{
+		if (!exists(path) || !isFile(path))
+		{
+			return false;
+		}
+
+		auto zip = new ZipArchive(read(path));
+		foreach (name, am; zip.directory)
+		{
+			if (am.expandedSize == 0 && am.crc32 == 0)
+			{
+				// Directory
+				mkdirRecurse(name);
+			}
+			else
+			{
+				auto extract_dest = buildPath(to, name);
+
+				writefln(" ... %s", name);
+				auto p = dirName(extract_dest);
+				if (!exists(p))
+				{
+					mkdirRecurse(p);
+				}
+
+				auto f = File(extract_dest, "wb");
+				f.rawWrite(zip.expand(am));
+				f.close();
+
+				if (am.expandedData.length != am.expandedSize)
+				{
+					return false;
+				}
+			}
+		}
+
+		return true;
+	}
 }
 
 void main()
@@ -140,102 +218,62 @@ void main()
 
 	auto package_configure = new PackageConfigure(Config.config_filepath);
 	package_configure.load();
-	auto document = package_configure.json;
-	foreach (key, value; document)
+	foreach (i, p; package_configure.packages)
 	{
-		// JSONValue[string] p = json.object;
-		writeln(key);
-		writeln(value);
+		auto info = p.info;
 
-		writeln("repository" in value);
-		writeln("aaa" in value);
+		auto repository = info.repository;
+		auto install = info.install;
+		auto filename = info.filename;
+		auto destination = info.destination;
 
-		// string repository = p["repository"].str;
-		// string install = p["install"].str;
-		// string filename = p["filename"].str;
-		// string destination = p["destination"].str;
+		auto github = new GitHub();
+		JSONValue[] res_doc = github.get_releases(repository);
 
-		// // remove 'Z' (YYYY-MM-DDThh:mm:ssZ -> YYYY-MM-DDThh:mm:ss)
-		// auto dt = DateTime.fromISOExtString(install.replace("Z", ""));
+		auto latest_release = res_doc[0];
+		JSONValue[string] e = latest_release.object;
+		auto published_at = PackageConfigure.string_to_datetime(e["published_at"].str);
+		JSONValue[] assets = e["assets"].array;
+		foreach (a; assets)
+		{
+			JSONValue[string] n = a.object;
+			string name = n["name"].str;
 
-		// auto info = PackageInfo(repository, dt, filename, destination);
+			string dir = "tmp";
+			auto match = matchFirst(name, filename);
 
-		// writeln(info);
-		// writeln(dt);
+			// | match | newer | !exists | download |
+			// |-------|-------|---------|----------|
+			// | false | false | false   | false    |
+			// | false | false | true    | false    |
+			// | false | true  | false   | false    |
+			// | false | true  | true    | false    |
+			// | true  | false | false   | false    |
+			// | true  | false | true    | true     |
+			// | true  | true  | false   | true     |
+			// | true  | true  | true    | true     |
+			if (match)
+			{
+				writeln(name);
 
-		// // auto req = Request();
-		// // req.addHeaders(["Accept": "application/vnd.github.v3+json"]);
-		// auto release_url = join([
-		// 		"https:/", "api.github.com/repos", repository, "releases"
-		// 		], "/");
-		// writeln(release_url);
+				string dl_dest_path = buildPath(dir, name);
+				if (!(install > published_at || !exists(dl_dest_path)))
+				{
+					break;
+				}
 
-		// auto client = HTTP();
-		// client.addRequestHeader("Accept", "application/vnd.github.v3+json");
-		// // auto res = post(release_url, [], client);
-		// char[] res = get(release_url, client);
-		// string sres = to!string(res);
-		// JSONValue[] res_doc = parseJSON(sres).array;
+				if (!exists(dir))
+				{
+					mkdir(dir);
+				}
 
-		// auto latest_release = res_doc[0];
+				string download_url = n["browser_download_url"].str;
+				github.download(download_url, dl_dest_path);
+				FileUtils.extract_zip(dl_dest_path, dir);
+			}
+		}
 
-		// JSONValue[string] e = latest_release.object;
-		// JSONValue[] assets = e["assets"].array;
-		// foreach (a; assets)
-		// {
-		// 	JSONValue[string] n = a.object;
-		// 	string name = n["name"].str;
-
-		// 	string dir = "tmp";
-		// 	auto match = matchFirst(name, filename);
-		// 	if (match)
-		// 	{
-		// 		writeln(name);
-
-		// 		if (!exists(dir))
-		// 		{
-		// 			mkdir(dir);
-		// 		}
-		// 		// string p = buildPath("tmp", name);
-		// 		// mkdirRecurse(p);
-
-		// 		string download_url = n["browser_download_url"].str;
-		// 		string dl_dest_path = buildPath(dir, name);
-		// 		download(download_url, dl_dest_path, client);
-
-		// 		if (exists(dl_dest_path) && isFile(dl_dest_path))
-		// 		{
-		// 			auto zip = new ZipArchive(read(dl_dest_path));
-		// 			foreach (aname, am; zip.directory)
-		// 			{
-		// 				// writefln("%10s  %08x  %s", am.expandedSize, am.crc32, aname);
-
-		// 				if (am.expandedSize == 0 && am.crc32 == 0)
-		// 				{
-		// 					// Directory
-		// 					mkdirRecurse(aname);
-		// 				}
-		// 				else
-		// 				{
-		// 					auto extract_dest = buildPath(dir, aname);
-		// 					writefln(aname);
-		// 					auto p = dirName(extract_dest);
-		// 					if (!exists(p))
-		// 					{
-		// 						mkdirRecurse(p);
-		// 					}
-		// 					auto f = File(extract_dest, "wb");
-		// 					f.rawWrite(zip.expand(am));
-		// 					f.close();
-		// 					assert(am.expandedData.length == am.expandedSize);
-		// 				}
-		// 			}
-		// 		}
-		// 	}
-		// }
-
-		// // writeln(res.code);
-		// // writeln(res.responseBody);
+		package_configure.packages[i].info.install = published_at;
 	}
 
 	package_configure.save();
