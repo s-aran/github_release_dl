@@ -6,10 +6,10 @@ struct VersionInfo
   static auto Major = "${Major}";
   static auto Minor = "${02:Minor}";
   static auto Build = "${Build}";
-  static auto VcsHash = "${git:hash}";
-  static auto datetime = "${git:date} ${git:time}";
+  static auto Hash = "${git:hash}";
+  static auto Datetime = "${git:date} ${git:time}";
   static auto VersionString = "${Major}.${02:Minor}.${Build} (${git:hash})";
 }
 '''
 Minor = 20
-Build = "133"
+Build = "149"

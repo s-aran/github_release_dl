@@ -3,9 +3,9 @@ struct VersionInfo
 {
   static auto Major = "0";
   static auto Minor = "20";
-  static auto Build = "133";
-  static auto VcsHash = "da45c9e";
-  static auto datetime = "2021/07/18 03:12:15";
-  static auto VersionString = "0.20.133 (da45c9e)";
+  static auto Build = "149";
+  static auto Hash = "7ee43e2";
+  static auto Datetime = "2021/07/18 12:46:44";
+  static auto VersionString = "0.20.149 (7ee43e2)";
 }
 
