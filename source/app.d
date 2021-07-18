@@ -97,25 +97,7 @@ void main()
 						auto from_path = buildPath(dir, FileUtils.dirname_zip(dl_dest_path));
 						auto to_path = buildPath(destination, rename);
 						writefln("from = %s, to=%s", from_path, to_path);
-						foreach (nm; dirEntries(from_path, SpanMode.depth))
-						{
-							auto to_dir_path = buildPath(pathSplitter(nm).array[2 .. $-1]);		// directory path
-							auto to_file_path = buildPath(pathSplitter(nm).array[2 .. $]);		// file path
-
-							auto move_dest_dir = buildPath(to_path, to_dir_path);
-							if (!exists(move_dest_dir))
-							{
-								mkdirRecurse(move_dest_dir);
-							}
-
-							if (isFile(nm))
-							{
-								auto move_dest_path = buildPath(to_path, to_file_path);
-								writefln("%s -> %s", nm, move_dest_path);
-								copy(nm, move_dest_path);
-							}
-						}
-						rmdirRecurse(from_path);
+						FileUtils.move_recurse(from_path, to_path);
 					}
 					else
 					{

@@ -141,7 +141,27 @@ FileType analyze(string path)
   return FileType.Unknown;
 }
 
-void rename(string from, string to)
+static bool move_recurse(string from, string to)
 {
-  rename(from, to);
+  foreach (nm; dirEntries(from, SpanMode.depth))
+  {
+    auto to_dir_path = buildPath(pathSplitter(nm).array[2 .. $ - 1]); // directory path
+    auto to_file_path = buildPath(pathSplitter(nm).array[2 .. $]); // file path
+
+    auto move_dest_dir = buildPath(to, to_dir_path);
+    if (!exists(move_dest_dir))
+    {
+      mkdirRecurse(move_dest_dir);
+    }
+
+    if (isFile(nm))
+    {
+      auto move_dest_path = buildPath(to, to_file_path);
+      writefln("%s -> %s", nm, move_dest_path);
+      copy(nm, move_dest_path);
+    }
+  }
+  rmdirRecurse(from);
+
+  return true;
 }
