@@ -4,6 +4,7 @@ import std.stdio;
 import std.file;
 import std.path;
 import std.zip;
+import std.array;
 import std.process;
 
 private const string BaseDirectory = "tmp";
@@ -27,6 +28,29 @@ bool mkdir_if_not_exists(string pathname)
   return true;
 }
 
+string dirname_zip(string path)
+{
+  if (!exists(path) || !isFile(path))
+  {
+    return "";
+  }
+
+  string result = "";
+  auto zip = new ZipArchive(read(path));
+  foreach (name, am; zip.directory)
+  {
+    if (am.expandedSize == 0 && am.crc32 == 0)
+    {
+      writefln("directory: %s", name);
+      auto l = pathSplitter(name);
+      result = l.array[0];
+      break;
+    }
+  }
+
+  return result;
+}
+
 bool extract_zip(string path, string to)
 {
   if (!exists(path) || !isFile(path))
@@ -41,6 +65,7 @@ bool extract_zip(string path, string to)
     {
       // Directory
       mkdirRecurse(name);
+      writefln("directory: %s", name);
     }
     else
     {
@@ -114,4 +139,9 @@ FileType analyze(string path)
   }
 
   return FileType.Unknown;
+}
+
+void rename(string from, string to)
+{
+  rename(from, to);
 }

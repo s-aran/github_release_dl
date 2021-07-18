@@ -8,108 +8,118 @@ import std.array : join, replace;
 
 struct PackageInfo
 {
-	string repository;
-	DateTime install;
-	string filename;
-	string destination;
+  string repository;
+  DateTime install;
+  string filename;
+  string destination;
+  string rename;
 }
 
 struct Package
 {
-	string name;
-	PackageInfo info;
+  string name;
+  PackageInfo info;
 }
-
 
 class PackageConfigure
 {
-	private string path;
-	Package[] packages;
+  private string path;
+  Package[] packages;
 
-	this(string filepath)
-	{
-		this.path = filepath;
-	}
+  this(string filepath)
+  {
+    this.path = filepath;
+  }
 
-	void load()
-	{
-		if (!exists(this.path) || !isFile(this.path))
-		{
-			throw new Exception("File not found: " ~ this.path);
-		}
+  void load()
+  {
+    if (!exists(this.path) || !isFile(this.path))
+    {
+      throw new Exception("File not found: " ~ this.path);
+    }
 
-		auto file = File(this.path, "rb");
-		auto content = file.rawRead(new char[file.size]);
-		file.close();
+    auto file = File(this.path, "rb");
+    auto content = file.rawRead(new char[file.size]);
+    file.close();
 
-		auto json = parseJSON(content).object;
-		this.build(json);
-	}
+    auto json = parseJSON(content).object;
+    this.build(json);
+  }
 
-	void save()
-	{
-		if (!exists(this.path) || !isFile(this.path))
-		{
-			throw new Exception("File not found: " ~ this.path);
-		}
+  void save()
+  {
+    if (!exists(this.path) || !isFile(this.path))
+    {
+      throw new Exception("File not found: " ~ this.path);
+    }
 
-		auto file = new File(this.path, "w");
-		auto json = this.to_json(this.packages);
-		file.write(json.toPrettyString());
-		file.close();
-	}
+    auto file = new File(this.path, "w");
+    auto json = this.to_json(this.packages);
+    file.write(json.toPrettyString());
+    file.close();
+  }
 
-	private void build(JSONValue[string] document)
-	{
-		foreach (key, value; document)
-		{
-			JSONValue[string] item = value.object;
-			string repository = item["repository"].str;
+  private void build(JSONValue[string] document)
+  {
+    foreach (key, value; document)
+    {
+      JSONValue[string] item = value.object;
+      string repository = item["repository"].str;
 
-			string install_str = "";
-			if ("install" in item)
-			{
-				install_str = item["install"].str;
-			}
-			DateTime install = this.string_to_datetime(install_str);
-			string filename = item["filename"].str;
+      string install_str = "";
+      if ("install" in item)
+      {
+        install_str = item["install"].str;
+      }
+      DateTime install = this.string_to_datetime(install_str);
+      string filename = item["filename"].str;
 
-			string destination = "";
-			if ("destination" in item)
-			{
-				destination = item["destination"].str;
-			}
+      string destination = "";
+      if ("destination" in item)
+      {
+        destination = item["destination"].str;
+      }
 
-			auto info = PackageInfo(repository, install, filename, destination);
-			auto pkg = Package(key, info);
-			this.packages ~= pkg;
-		}
-	}
+      string rename = "";
+      if ("rename" in item)
+      {
+        rename = item["rename"].str;
+      }
 
-	private JSONValue to_json(Package[] packages)
-	{
-		auto result = JSONValue((JSONValue[string]).init);
+      auto info = PackageInfo(repository, install, filename, destination, rename);
+      auto pkg = Package(key, info);
+      this.packages ~= pkg;
+    }
+  }
 
-		foreach (p; packages)
-		{
-			auto info = p.info;
+  private JSONValue to_json(Package[] packages)
+  {
+    auto result = JSONValue((JSONValue[string]).init);
 
-			auto item = JSONValue((JSONValue[string]).init);
-			item["repository"] = info.repository;
-			item["install"] = info.install.toISOExtString();
-			item["filename"] = info.filename;
-			item["destination"] = info.destination;
+    foreach (p; packages)
+    {
+      auto info = p.info;
 
-			result[p.name] = item;
-		}
+      auto item = JSONValue((JSONValue[string]).init);
+      item["repository"] = info.repository;
+      item["install"] = info.install.toISOExtString();
+      item["filename"] = info.filename;
+      item["destination"] = info.destination;
+      if (info.rename.length > 0)
+      {
+        item["rename"] = info.rename;
+      }
 
-		return result;
-	}
+      result[p.name] = item;
+    }
 
-	static DateTime string_to_datetime(string s)
-	{
-		// remove 'Z' (YYYY-MM-DDThh:mm:ssZ -> YYYY-MM-DDThh:mm:ss)
-		return s.length > 0 ? DateTime.fromISOExtString(s.replace("Z", "")) : DateTime();
-	}
+    return result;
+  }
+
+  static DateTime string_to_datetime(string s)
+  {
+    // remove 'Z' (YYYY-MM-DDThh:mm:ssZ -> YYYY-MM-DDThh:mm:ss)
+    return s.length > 0 ? DateTime.fromISOExtString(s.replace("Z", "")) : DateTime();
+  }
 
 }
