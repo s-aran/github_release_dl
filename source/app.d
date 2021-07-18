@@ -10,7 +10,7 @@ import std.file;
 import std.path;
 import std.zip;
 
-static const string Version = "0.10";
+import VersionInfo;
 
 struct PackageInfo
 {
@@ -210,7 +210,7 @@ class FileUtils
 void main()
 {
 	writeln("github release downloader");
-	writefln("version: %s", Version);
+	writefln("version: %s", VersionInfo.VersionInfo.VersionString);
 
 	auto package_configure = new PackageConfigure(Config.config_filepath);
 	package_configure.load();
