@@ -15,6 +15,7 @@ import VersionInfo;
 import GitHub;
 import PackageConfigure;
 import FileUtils;
+import Logger;
 
 class Config
 {
@@ -23,6 +24,11 @@ class Config
 
 void main()
 {
+	auto logger = EzLogger.get_logger("main");
+	logger.trace("trace");
+	logger.info("info");
+	logger.warn("warn");
+
 	writeln("github release downloader");
 	writefln("version: %s", VersionInfo.VersionInfo.VersionString);
 
@@ -83,7 +89,7 @@ void main()
 				FileUtils.mkdir_if_not_exists(extract_to);
 
 				const auto file_type = FileUtils.analyze(dl_dest_path);
-				write("file_tupe = ");
+				write("file_type = ");
 				writeln(file_type);
 				auto result = false;
 				switch (file_type)

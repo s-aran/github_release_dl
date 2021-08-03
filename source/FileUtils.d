@@ -78,7 +78,7 @@ bool extract_zip(string path, string to)
         mkdirRecurse(p);
       }
 
-      auto f = File(extract_dest, "wb");
+      auto f = File(extract_dest, "wb+");
       f.rawWrite(zip.expand(am));
       f.close();
 
