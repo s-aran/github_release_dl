@@ -4,7 +4,8 @@
 	],
 	"copyright": "Copyright(C) 2021 s.aran",
 	"description": "A minimal D application.",
-	"license": "proprietary",
+	"license": "MIT",
 	"name": "github_release_dl",
-	"preBuildCommands": ["suji -i Build -w > source/version_info.d"]
+	"libs": ["curl"],
+	"preBuildCommands": ["suji -i Build -w > source/VersionInfo.d"]
 }
