@@ -10,6 +10,8 @@ import std.file;
 import std.path;
 import std.zip;
 import std.array;
+import std.getopt;
+import std.format;
 
 import VersionInfo;
 import GitHub;
@@ -17,20 +19,61 @@ import PackageConfigure;
 import FileUtils;
 import Logger;
 
+
 class Config
 {
 	static string config_filepath = "package.json";
+	static EzLogger.Level log_level = EzLogger.Level.Info;
 }
 
-void main()
+void main(string[] args)
 {
 	auto logger = EzLogger.get_logger("main");
-	logger.trace("trace");
-	logger.info("info");
-	logger.warn("warn");
+	logger.info("github release downloader");
+	logger.info(format("version: %s", VersionInfo.VersionInfo.VersionString));
 
-	writeln("github release downloader");
-	writefln("version: %s", VersionInfo.VersionInfo.VersionString);
+	void optionCallback(string option)
+	{
+		logger.info(format("option=%s", option));
+	}
+
+	void loglevel_callback(string op)
+	{
+		switch (op)
+		{
+			case "trace":
+				Config.log_level = EzLogger.Level.Trace;
+				break;
+			case "info":
+				Config.log_level = EzLogger.Level.Info;
+				break;
+			case "warn":
+			case "warning":
+				Config.log_level = EzLogger.Level.Warn;
+				break;
+			case "error":
+				Config.log_level = EzLogger.Level.Error;
+				break;
+			case "critical":
+				Config.log_level = EzLogger.Level.Critical;
+				break;
+			case "fatal":
+				Config.log_level = EzLogger.Level.Fatal;
+				break;
+			default:
+				return;
+		}
+		logger.set_level(Config.log_level);
+	}
+	getopt(args, 
+			"trace", &loglevel_callback, 
+			"info", &loglevel_callback, 
+			"warn", &loglevel_callback, 
+			"warning", &loglevel_callback, 
+			"error", &loglevel_callback, 
+			"critical", &loglevel_callback, 
+			"fatal", &loglevel_callback
+		);
 
 	auto package_configure = new PackageConfigure.PackageConfigure(Config.config_filepath);
 	package_configure.load();
@@ -49,8 +92,7 @@ void main()
 
 		auto latest_release = res_doc[0];
 		JSONValue[string] e = latest_release.object;
-		const auto published_at = PackageConfigure.PackageConfigure.string_to_datetime(
-				e["published_at"].str);
+		const auto published_at = PackageConfigure.PackageConfigure.string_to_datetime(e["published_at"].str);
 		JSONValue[] assets = e["assets"].array;
 		foreach (a; assets)
 		{
@@ -72,7 +114,7 @@ void main()
 			// | true  | true  | true    | true     |
 			if (match)
 			{
-				writeln(name);
+				logger.trace(name);
 
 				string dl_dest_path = buildPath(dir, name);
 				if (!(install > published_at || !exists(dl_dest_path)))
@@ -89,20 +131,19 @@ void main()
 				FileUtils.mkdir_if_not_exists(extract_to);
 
 				const auto file_type = FileUtils.analyze(dl_dest_path);
-				write("file_type = ");
-				writeln(file_type);
+				logger.trace(format("file_type = %s", file_type));
 				auto result = false;
 				switch (file_type)
 				{
 				case FileUtils.FileType.Zip:
-					writefln("zip dir: %s", FileUtils.dirname_zip(dl_dest_path));
+					logger.trace(format("zip dir: %s", FileUtils.dirname_zip(dl_dest_path)));
 					if (rename.length > 0)
 					{
 						// extract to BaseDirectory
 						result = FileUtils.extract_zip(dl_dest_path, dir);
 						auto from_path = buildPath(dir, FileUtils.dirname_zip(dl_dest_path));
 						auto to_path = buildPath(destination, rename);
-						writefln("from = %s, to=%s", from_path, to_path);
+						logger.trace(format("from = %s, to=%s", from_path, to_path));
 						FileUtils.move_recurse(from_path, to_path);
 					}
 					else

@@ -80,12 +80,12 @@ class EzLogger
     }
   }
 
-  public Level getLevel()
+  public Level get_level()
   {
     return this.level;
   }
 
-  public void setLevel(Level level)
+  public void set_level(Level level)
   {
     this.level = level;
   }
