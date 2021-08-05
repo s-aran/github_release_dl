@@ -1,0 +1,15 @@
+{
+    "bat": {
+        "destination": "M:\\apps",
+        "filename": "^bat-.*-x86_64-pc-windows-msvc.zip$",
+        "install": "2021-07-13T10:01:53",
+        "rename": "bat",
+        "repository": "sharkdp\/bat"
+    },
+    "vim_win32_installer": {
+        "destination": "M:\\apps",
+        "filename": "gvim_.*_x64.zip$",
+        "install": "2021-07-17T22:10:22",
+        "repository": "vim\/vim-win32-installer"
+    }
+}
