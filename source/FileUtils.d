@@ -75,14 +75,15 @@ bool extract_zip(string path, string to)
   auto zip = new ZipArchive(read(path));
   foreach (name, am; zip.directory)
   {
+    auto extract_dest = buildPath(to, name);
+
     if (am.expandedSize == 0 && am.crc32 == 0)
     {
-      logger.trace(format("directory: %s", name));
-      mkdirRecurse(name);
+      logger.trace(format("directory: %s", extract_dest));
+      mkdirRecurse(extract_dest);
     }
     else
     {
-      auto extract_dest = buildPath(to, name);
 
       logger.info(format(" ... %s", name));
       auto p = dirName(extract_dest);
