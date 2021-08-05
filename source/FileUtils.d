@@ -6,6 +6,10 @@ import std.path;
 import std.zip;
 import std.array;
 import std.process;
+import std.format;
+
+import Logger;
+
 
 private const string BaseDirectory = "tmp";
 
@@ -17,6 +21,11 @@ enum FileType
   Rpm,
   Deb,
   Msi,
+}
+
+private auto get_logger()
+{
+  return EzLogger.get_logger("file");
 }
 
 bool mkdir_if_not_exists(string pathname)
@@ -53,30 +62,37 @@ string dirname_zip(string path)
 
 bool extract_zip(string path, string to)
 {
+  auto logger = get_logger();
+
   if (!exists(path) || !isFile(path))
   {
+    logger.info(format("extract: %s is not exists or not file", path));
     return false;
   }
+
+  logger.info(format("extract %s to %s", path, to));
 
   auto zip = new ZipArchive(read(path));
   foreach (name, am; zip.directory)
   {
     if (am.expandedSize == 0 && am.crc32 == 0)
     {
-      // Directory
+      logger.trace(format("directory: %s", name));
       mkdirRecurse(name);
-      writefln("directory: %s", name);
     }
     else
     {
       auto extract_dest = buildPath(to, name);
 
-      writefln(" ... %s", name);
+      logger.info(format(" ... %s", name));
       auto p = dirName(extract_dest);
       if (!exists(p))
       {
+        logger.info(format("make directory: %s", p));
         mkdirRecurse(p);
       }
+
+      logger.trace(format("=====> %s", extract_dest));
 
       auto f = File(extract_dest, "wb+");
       f.rawWrite(zip.expand(am));
@@ -143,6 +159,10 @@ FileType analyze(string path)
 
 static bool move_recurse(string from, string to)
 {
+  auto logger = get_logger();
+
+  logger.trace(format("move %s -> %s", from, to));
+
   foreach (nm; dirEntries(from, SpanMode.depth))
   {
     auto to_dir_path = buildPath(pathSplitter(nm).array[2 .. $ - 1]); // directory path
@@ -157,7 +177,7 @@ static bool move_recurse(string from, string to)
     if (isFile(nm))
     {
       auto move_dest_path = buildPath(to, to_file_path);
-      writefln("%s -> %s", nm, move_dest_path);
+      logger.trace(format("%s -> %s", nm, move_dest_path));
       copy(nm, move_dest_path);
     }
   }
