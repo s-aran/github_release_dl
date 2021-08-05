@@ -63,7 +63,7 @@ void main(string[] args)
 			default:
 				return;
 		}
-		logger.set_level(Config.log_level);
+		EzLogger.set_all_level(Config.log_level);
 	}
 	getopt(args, 
 			"trace", &loglevel_callback, 

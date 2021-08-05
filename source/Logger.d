@@ -24,7 +24,12 @@ class EzLogger
   {
     if (!(module_name in instances))
     {
-      instances[module_name] = new EzLogger(Level.Info, module_name);
+      auto level = Level.Info;
+      if (instances.length > 0)
+      {
+        level = instances.values[0].get_level();
+      }
+      instances[module_name] = new EzLogger(level, module_name);
     }
 
     return instances[module_name];
@@ -39,7 +44,7 @@ class EzLogger
     this.module_name = module_name;
   }
 
-  private string get_level_string(Level level)
+  private static string get_level_string(Level level)
   {
     switch (level)
     {
@@ -60,7 +65,7 @@ class EzLogger
     }
   }
 
-  private string get_current_datetime(string format_str)
+  private static string get_current_datetime(string format_str)
   {
     auto now = Clock.currTime();
     return format_str
@@ -88,6 +93,14 @@ class EzLogger
   public void set_level(Level level)
   {
     this.level = level;
+  }
+
+  public static void set_all_level(Level level)
+  {      
+    foreach (i; instances)
+    {
+      i.set_level(level);
+    }
   }
 
   public void trace(string message)
