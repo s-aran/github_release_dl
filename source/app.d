@@ -35,28 +35,10 @@ void main(string[] args)
   logger.info("github release downloader");
   logger.info(format("version: %s", VersionInfo.VersionInfo.VersionString));
 
-  void package_json_file_callback(string path)
+  void package_json_file_callback(string op, string v)
   {
-    Config.config_filepath = path;
-  }
-
-  void help_callback()
-  {
-      writeln("github_release_dl [--trace][--info][--warn][--error][--critical][--fatal][--package package_json]");
-      writeln("");
-      writeln("Logger parameters:");
-      writeln("    --trace    ... set log level to trace");
-      writeln("    --info     ... set log level to info");
-      writeln("    --warn     ... set log level to warn");
-      writeln("    --error    ... set log level to error");
-      writeln("    --critical ... set log level to critical (default)");
-      writeln("    --fatal    ... set log level to fatal");
-      writeln("");
-      writeln("Setting parameter:");
-      writeln("    --package package_json");
-      writeln("               ... specify package.json path (default: package.json)");
-
-      exit(0);
+    logger.trace(format("specified --package option. package.json ==> %s", v));
+    Config.config_filepath = v;
   }
 
   void loglevel_callback(string op)
@@ -88,17 +70,28 @@ void main(string[] args)
     EzLogger.set_all_level(Config.log_level);
   }
 
-  getopt(args, 
-      "help", &help_callback,
-      "trace", &loglevel_callback, 
-      "info", &loglevel_callback, 
-      "warn", &loglevel_callback, 
-      "warning", &loglevel_callback, 
-      "error", &loglevel_callback, 
-      "critical", &loglevel_callback, 
-      "fatal", &loglevel_callback,
-      "package", &package_json_file_callback
+  void version_callback()
+  {
+    writefln("github_release_dl %s", VersionInfo.VersionInfo.VersionString);
+    exit(0);
+  }
+
+  auto getopt_result = getopt(args, 
+      "trace"     , "set log level to trace"                    , &loglevel_callback, 
+      "info"      , "set log level to info"                     , &loglevel_callback, 
+      "warn"      , "set log level to warn"                     , &loglevel_callback, 
+      "warning"   , "set log level to warn"                     , &loglevel_callback, 
+      "error"     , "set log level to error"                    , &loglevel_callback, 
+      "critical"  , "set log level to critical"                 , &loglevel_callback, 
+      "fatal"     , "set log level to fatal"                    , &loglevel_callback,
+      "package|p" , "load specified alternative package.json"   , &package_json_file_callback,
+      "version"   , "show version"                              , &version_callback
     );
+  if (getopt_result.helpWanted)
+  {
+    defaultGetoptPrinter("option help", getopt_result.options);
+    exit(255);
+  }
 
   auto package_configure = new PackageConfigure.PackageConfigure(Config.config_filepath);
   package_configure.load();
