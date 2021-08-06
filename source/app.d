@@ -112,55 +112,57 @@ void main(string[] args)
 			// | true  | false | true    | true     |
 			// | true  | true  | false   | true     |
 			// | true  | true  | true    | true     |
-			if (match)
+			if (!match)
 			{
-				logger.trace(name);
+				continue;
+			}
 
-				string dl_dest_path = buildPath(dir, name);
-				if (!(install > published_at || !exists(dl_dest_path)))
+			logger.trace(name);
+
+			string dl_dest_path = buildPath(dir, name);
+			if (!(install > published_at || !exists(dl_dest_path)))
+			{
+				break;
+			}
+
+			FileUtils.mkdir_if_not_exists(dir);
+
+			string download_url = n["browser_download_url"].str;
+			github.download(download_url, dl_dest_path);
+
+			auto extract_to = destination.length > 0 ? destination : dir;
+			FileUtils.mkdir_if_not_exists(extract_to);
+
+			const auto file_type = FileUtils.analyze(dl_dest_path);
+			logger.trace(format("file_type = %s", file_type));
+			auto result = false;
+			switch (file_type)
+			{
+			case FileUtils.FileType.Zip:
+				logger.trace(format("zip dir: %s", FileUtils.dirname_zip(dl_dest_path)));
+				if (rename.length > 0)
 				{
-					break;
+					// extract to BaseDirectory
+					result = FileUtils.extract_zip(dl_dest_path, dir);
+					auto from_path = buildPath(dir, FileUtils.dirname_zip(dl_dest_path));
+					auto to_path = buildPath(destination, rename);
+					logger.trace(format("from = %s, to=%s", from_path, to_path));
+					FileUtils.move_recurse(from_path, to_path);
 				}
-
-				FileUtils.mkdir_if_not_exists(dir);
-
-				string download_url = n["browser_download_url"].str;
-				github.download(download_url, dl_dest_path);
-
-				auto extract_to = destination.length > 0 ? destination : dir;
-				FileUtils.mkdir_if_not_exists(extract_to);
-
-				const auto file_type = FileUtils.analyze(dl_dest_path);
-				logger.trace(format("file_type = %s", file_type));
-				auto result = false;
-				switch (file_type)
+				else
 				{
-				case FileUtils.FileType.Zip:
-					logger.trace(format("zip dir: %s", FileUtils.dirname_zip(dl_dest_path)));
-					if (rename.length > 0)
-					{
-						// extract to BaseDirectory
-						result = FileUtils.extract_zip(dl_dest_path, dir);
-						auto from_path = buildPath(dir, FileUtils.dirname_zip(dl_dest_path));
-						auto to_path = buildPath(destination, rename);
-						logger.trace(format("from = %s, to=%s", from_path, to_path));
-						FileUtils.move_recurse(from_path, to_path);
-					}
-					else
-					{
-						result = FileUtils.extract_zip(dl_dest_path, extract_to);
-					}
-					break;
-				case FileUtils.FileType.Exe:
-					// fall through
-				case FileUtils.FileType.Msi:
-					result = FileUtils.execute(dl_dest_path, "");
-					break;
-				default:
-					// download only
-					result = true;
-					break;
+					result = FileUtils.extract_zip(dl_dest_path, extract_to);
 				}
+				break;
+			case FileUtils.FileType.Exe:
+				// fall through
+			case FileUtils.FileType.Msi:
+				result = FileUtils.execute(dl_dest_path, "");
+				break;
+			default:
+				// download only
+				result = true;
+				break;
 			}
 		}
 
