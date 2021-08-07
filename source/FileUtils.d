@@ -186,3 +186,18 @@ static bool move_recurse(string from, string to)
 
   return true;
 }
+
+
+DirEntry[] get_files_with_sort_by_lastmodified(string path)
+{
+    import std.algorithm;
+    // TODO:
+    //    1. List files contain tmp/
+    //    2. sort last update asc
+    //    3. pattern match
+    //    4. extract
+    alias comp = (x, y) => x.timeLastModified() > y.timeLastModified();
+    DirEntry[] files = dirEntries(path, SpanMode.breadth).array;
+    return files.sort!(comp).release;
+}
+    
