@@ -77,32 +77,24 @@ bool extract_zip(string path, string to)
   {
     auto extract_dest = buildPath(to, name);
 
-    if (am.expandedSize == 0 && am.crc32 == 0)
+    logger.info(format(" ... %s", name));
+    auto p = dirName(extract_dest);
+    if (!exists(p))
     {
-      logger.trace(format("directory: %s", extract_dest));
-      mkdirRecurse(extract_dest);
+      logger.trace(format("make directory: %s (dirName => %s)", extract_dest, p));
+      logger.info(format("make directory: %s", p));
+      mkdirRecurse(p);
     }
-    else
+
+    logger.trace(format("=====> %s", extract_dest));
+
+    auto f = File(extract_dest, "wb+");
+    f.rawWrite(zip.expand(am));
+    f.close();
+
+    if (am.expandedData.length != am.expandedSize)
     {
-
-      logger.info(format(" ... %s", name));
-      auto p = dirName(extract_dest);
-      if (!exists(p))
-      {
-        logger.info(format("make directory: %s", p));
-        mkdirRecurse(p);
-      }
-
-      logger.trace(format("=====> %s", extract_dest));
-
-      auto f = File(extract_dest, "wb+");
-      f.rawWrite(zip.expand(am));
-      f.close();
-
-      if (am.expandedData.length != am.expandedSize)
-      {
-        return false;
-      }
+      return false;
     }
   }
 
@@ -190,14 +182,14 @@ static bool move_recurse(string from, string to)
 
 DirEntry[] get_files_with_sort_by_lastmodified(string path)
 {
-    import std.algorithm;
-    // TODO:
-    //    1. List files contain tmp/
-    //    2. sort last update asc
-    //    3. pattern match
-    //    4. extract
-    alias comp = (x, y) => x.timeLastModified() > y.timeLastModified();
-    DirEntry[] files = dirEntries(path, SpanMode.breadth).array;
-    return files.sort!(comp).release;
+  import std.algorithm;
+  // TODO:
+  //    1. List files contain tmp/
+  //    2. sort last update asc
+  //    3. pattern match
+  //    4. extract
+  alias comp = (x, y) => x.timeLastModified() > y.timeLastModified();
+  DirEntry[] files = dirEntries(path, SpanMode.breadth).array;
+  return files.sort!(comp).release;
 }
-    
+

@@ -11,5 +11,5 @@ struct VersionInfo
   static auto VersionString = "${Major}.${02:Minor}.${Build} (${git:hash})";
 }
 '''
-Minor = 22
-Build = "382"
+Minor = 23
+Build = "386"
