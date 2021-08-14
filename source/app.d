@@ -14,7 +14,7 @@ import std.format;
 import core.stdc.stdlib: exit;
 
 import Args;
-import Config: Config;
+import Config: Config, ConfigFile;
 import VersionInfo;
 import GitHub;
 import PackageConfigure;
@@ -31,6 +31,9 @@ void main(string[] args)
 
   EzLogger.set_all_level(Config.log_level);
   Arguments.analyze(args);
+
+  ConfigFile config_file = new ConfigFile("config.json");
+  config_file.load();
 
   DirEntry[] files = [];
   if (Config.install_only && !Config.download_only)

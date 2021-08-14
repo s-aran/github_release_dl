@@ -10,6 +10,7 @@ import std.format;
 import core.stdc.stdlib: exit;
 
 import Logger;
+import Config: Config;
 
 class GitHub
 {
@@ -24,6 +25,12 @@ class GitHub
 
 		auto client = HTTP();
 		client.addRequestHeader("Accept", "application/vnd.github.v3+json");
+		if (Config.github_oauth_token.length > 0)
+		{
+			auto value = format("token %s", Config.github_oauth_token);
+			logger.trace(format("Authorization: %s", value));
+			client.addRequestHeader("Authorization", value);
+		}
 
 		auto release_url = this.create_url(repository);
 
