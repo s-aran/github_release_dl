@@ -10,10 +10,11 @@ import std.file;
 import std.path;
 import std.zip;
 import std.array;
-import std.getopt;
 import std.format;
 import core.stdc.stdlib: exit;
 
+import Args;
+import Config: Config;
 import VersionInfo;
 import GitHub;
 import PackageConfigure;
@@ -21,94 +22,18 @@ import FileUtils;
 import Logger;
 
 
-class Config
-{
-  static string config_filepath = "package.json";
-  static EzLogger.Level log_level = EzLogger.Level.Critical;
-  static string download_dest = "tmp/";
-}
-
 void main(string[] args)
 {
   auto logger = EzLogger.get_logger("main");
-  EzLogger.set_all_level(Config.log_level);
 
   logger.info("github release downloader");
   logger.info(format("version: %s", VersionInfo.VersionInfo.VersionString));
 
-  void package_json_file_callback(string op, string v)
-  {
-    logger.trace(format("specified --package option. package.json ==> %s", v));
-    Config.config_filepath = v;
-  }
-
-  void loglevel_callback(string op)
-  {
-    switch (op)
-    {
-      case "trace":
-        Config.log_level = EzLogger.Level.Trace;
-        break;
-      case "info":
-        Config.log_level = EzLogger.Level.Info;
-        break;
-      case "warn":
-      case "warning":
-        Config.log_level = EzLogger.Level.Warn;
-        break;
-      case "error":
-        Config.log_level = EzLogger.Level.Error;
-        break;
-      case "critical":
-        Config.log_level = EzLogger.Level.Critical;
-        break;
-      case "fatal":
-        Config.log_level = EzLogger.Level.Fatal;
-        break;
-      default:
-        return;
-    }
-    EzLogger.set_all_level(Config.log_level);
-  }
-
-  void version_callback()
-  {
-    writefln("github_release_dl %s", VersionInfo.VersionInfo.VersionString);
-    exit(0);
-  }
-
-  // |        only        |          do         |
-  // | download | install | download  | install | 
-  // |----------|---------|-----------|---------|
-  // | x        | x       | o         | o       |
-  // | x        | o       | x         | o       |
-  // | o        | x       | o         | x       |
-  // | o        | o       | o         | o       |
-
-  bool download_only = false;
-  bool install_only = false;
-
-  auto getopt_result = getopt(args, 
-      "download-only"   , "check for updates and download assets"     , &download_only, 
-      "install-only"    , "install the files that exists in tmp/"     , &install_only, 
-      "trace"           , "set log level to trace"                    , &loglevel_callback, 
-      "info"            , "set log level to info"                     , &loglevel_callback, 
-      "warn"            , "set log level to warn"                     , &loglevel_callback, 
-      "warning"         , "set log level to warn"                     , &loglevel_callback, 
-      "error"           , "set log level to error"                    , &loglevel_callback, 
-      "critical"        , "set log level to critical"                 , &loglevel_callback, 
-      "fatal"           , "set log level to fatal"                    , &loglevel_callback,
-      "package|p"       , "load specified alternative package.json"   , &package_json_file_callback,
-      "version"         , "show version"                              , &version_callback
-    );
-  if (getopt_result.helpWanted)
-  {
-    defaultGetoptPrinter("option help", getopt_result.options);
-    exit(255);
-  }
+  EzLogger.set_all_level(Config.log_level);
+  Arguments.analyze(args);
 
   DirEntry[] files = [];
-  if (install_only && !download_only)
+  if (Config.install_only && !Config.download_only)
   {
     files = FileUtils.get_files_with_sort_by_lastmodified(Config.download_dest);
     // foreach (DirEntry e; list)
@@ -116,7 +41,6 @@ void main(string[] args)
     //   writefln("%s / %s", e.name(), e.timeLastModified());
     // }
   }
-
 
   auto package_configure = new PackageConfigure.PackageConfigure(Config.config_filepath);
   package_configure.load();
@@ -132,7 +56,7 @@ void main(string[] args)
 
     auto extract_to = destination.length > 0 ? destination : Config.download_dest;
 
-    if (download_only || (!download_only && !install_only))
+    if (Config.download_only || (!Config.download_only && !Config.install_only))
     {
       auto github = new GitHub.GitHub();
       JSONValue[] res_doc = github.get_releases(repository);
@@ -176,7 +100,7 @@ void main(string[] args)
         string download_url = n["browser_download_url"].str;
         github.download(download_url, dl_dest_path);
 
-        if (!download_only && !install_only)
+        if (!Config.download_only && !Config.install_only)
         {
           FileUtils.mkdir_if_not_exists(extract_to);
 
@@ -217,7 +141,7 @@ void main(string[] args)
       }
     }
 
-    if (install_only && !download_only)
+    if (Config.install_only && !Config.download_only)
     {
       logger.trace(format("asset regex => %s", filename));
       foreach (DirEntry e; files)
