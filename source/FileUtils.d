@@ -28,10 +28,13 @@ private auto get_logger()
   return EzLogger.get_logger("file");
 }
 
-bool mkdir_if_not_exists(string pathname)
+public bool mkdir_if_not_exists(string pathname)
 {
+  auto logger = get_logger();
+  logger.trace(format("pathname=%s, exists?: %s", pathname, exists(pathname) ? (isDir(pathname) ? "true (dir)" : "true (file)") : "false"));
   if (!exists(pathname))
   {
+    logger.trace(format("make dir %s", pathname));
     mkdirRecurse(pathname);
   }
   return true;
@@ -50,7 +53,7 @@ string dirname_zip(string path)
   {
     if (am.expandedSize == 0 && am.crc32 == 0)
     {
-      writefln("directory: %s", name);
+      // writefln("directory: %s", name);
       auto l = pathSplitter(name);
       result = l.array[0];
       break;
@@ -60,7 +63,12 @@ string dirname_zip(string path)
   return result;
 }
 
-bool extract_zip(string path, string to)
+private bool is_dir_for_zip(string path)
+{
+  return path[path.length - 1] == '/';
+}
+
+public bool extract_zip(string path, string to)
 {
   auto logger = get_logger();
 
@@ -77,16 +85,24 @@ bool extract_zip(string path, string to)
   {
     auto extract_dest = buildPath(to, name);
 
-    logger.info(format(" ... %s", name));
-    auto p = dirName(extract_dest);
-    if (!exists(p))
+    if (is_dir_for_zip(name))
     {
-      logger.trace(format("make directory: %s (dirName => %s)", extract_dest, p));
-      logger.info(format("make directory: %s", p));
-      mkdirRecurse(p);
+      logger.trace(format("%s is directory", name));
+      mkdir_if_not_exists(extract_dest);
+      continue;
     }
 
-    logger.trace(format("=====> %s", extract_dest));
+    logger.info(format(" ... %s", name));
+    auto p = dirName(extract_dest);
+    logger.trace(format("p=%s", p));
+    mkdir_if_not_exists(p);
+    // if (!exists(p))
+    // {
+    //   logger.trace(format("make directory: %s (dirName => %s)", extract_dest, p));
+    //   logger.info(format("make directory: %s", p));
+    //   mkdirRecurse(p);
+    // }
+    // logger.trace(format("=====> %s", extract_dest));
 
     auto f = File(extract_dest, "wb+");
     f.rawWrite(zip.expand(am));
@@ -101,13 +117,13 @@ bool extract_zip(string path, string to)
   return true;
 }
 
-bool execute(string path, string params = "")
+public bool execute(string path, string params = "")
 {
   auto result = executeShell(path);
   return result.status == 0;
 }
 
-FileType analyze(string path)
+public FileType analyze(string path)
 {
   const auto ReadBytes = 15;
 
@@ -162,10 +178,7 @@ static bool move_recurse(string from, string to)
     auto to_file_path = buildPath(pathSplitter(nm).array[2 .. $]); // file path
 
     auto move_dest_dir = buildPath(to, to_dir_path);
-    if (!exists(move_dest_dir))
-    {
-      mkdirRecurse(move_dest_dir);
-    }
+    mkdir_if_not_exists(move_dest_dir);
 
     if (isFile(nm))
     {
