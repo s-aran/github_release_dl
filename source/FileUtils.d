@@ -119,7 +119,21 @@ public bool extract_zip(string path, string to)
 
 public bool execute(string path, string params = "")
 {
-  auto result = executeShell(path);
+  auto logger = get_logger();
+  logger.trace(format("execute: path = %s ==> %s", path, exists(path) ? "exists" : "not exists"));
+
+version(Posix)
+{
+  auto result = std.process.executeShell(path);
+}
+
+version(Windows)
+{
+  auto result = std.process.executeShell(path.replace("/", "\\"));
+}
+
+  logger.trace(format("execute: result = %d", result.status));
+  logger.trace(format("execute: output = %s", result.output));
   return result.status == 0;
 }
 
