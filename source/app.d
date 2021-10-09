@@ -26,8 +26,8 @@ void main(string[] args)
 {
   auto logger = EzLogger.get_logger("main");
 
-  logger.info("github release downloader");
-  logger.info(format("version: %s", VersionInfo.VersionInfo.VersionString));
+  logger.trace("github release downloader");
+  logger.trace(format("version: %s", VersionInfo.VersionInfo.VersionString));
 
   EzLogger.set_all_level(Config.log_level);
   Arguments.analyze(args);
