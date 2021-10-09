@@ -56,6 +56,7 @@ void main(string[] args)
     auto filename = info.filename;
     const auto destination = info.destination;
     const auto rename = info.rename;
+    const auto installer = info.installer;
 
     auto extract_to = destination.length > 0 ? destination : Config.download_dest;
 
@@ -131,7 +132,7 @@ void main(string[] args)
           case FileUtils.FileType.Exe:
             // fall through
           case FileUtils.FileType.Msi:
-            result = FileUtils.execute(dl_dest_path, "");
+            result = installer ? FileUtils.execute(dl_dest_path, "") : true;
             break;
           default:
             // download only
@@ -180,7 +181,7 @@ void main(string[] args)
           case FileUtils.FileType.Exe:
             // fall through
           case FileUtils.FileType.Msi:
-            result = FileUtils.execute(e.name, "");
+            result = installer ? FileUtils.execute(e.name, "") : true;
             break;
           default:
             // download only

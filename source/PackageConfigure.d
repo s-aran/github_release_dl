@@ -1,6 +1,7 @@
 module PackageConfigure;
 
 import std.stdio;
+import std.string;
 import std.json;
 import std.file;
 import std.datetime.date : DateTime;
@@ -13,6 +14,7 @@ struct PackageInfo
   string filename;
   string destination;
   string rename;
+  bool installer;
 }
 
 struct Package
@@ -86,7 +88,13 @@ class PackageConfigure
         rename = item["rename"].str;
       }
 
-      auto info = PackageInfo(repository, install, filename, destination, rename);
+      bool installer = false;
+      if (auto _installer = "installer" in item)
+      {
+        installer =  _installer.type() == JSONType.true_;
+      }
+
+      auto info = PackageInfo(repository, install, filename, destination, rename, installer);
       auto pkg = Package(key, info);
       this.packages ~= pkg;
     }
@@ -109,6 +117,7 @@ class PackageConfigure
       {
         item["rename"] = info.rename;
       }
+      item["installer"] = info.installer;
 
       result[p.name] = item;
     }
