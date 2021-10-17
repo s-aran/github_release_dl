@@ -198,10 +198,23 @@ static bool move_recurse(string from, string to)
     {
       auto move_dest_path = buildPath(to, to_file_path);
       logger.trace(format("%s -> %s", nm, move_dest_path));
-      copy(nm, move_dest_path);
+      std.file.copy(nm, move_dest_path);
     }
   }
   rmdirRecurse(from);
+
+  return true;
+}
+
+static bool copy(string from, string to)
+{
+  auto logger = get_logger();
+
+  if (isFile(from))
+  {
+    logger.trace(format("%s -> %s", from, to));
+    std.file.copy(from, to);
+  }
 
   return true;
 }

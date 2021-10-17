@@ -15,6 +15,7 @@ struct PackageInfo
   string destination;
   string rename;
   bool installer;
+  bool extract;
 }
 
 struct Package
@@ -94,7 +95,13 @@ class PackageConfigure
         installer =  _installer.type() == JSONType.true_;
       }
 
-      auto info = PackageInfo(repository, install, filename, destination, rename, installer);
+      bool extract = true;
+      if (auto _extract = "extract" in item)
+      {
+        extract = _extract.type() == JSONType.true_;
+      }
+
+      auto info = PackageInfo(repository, install, filename, destination, rename, installer, extract);
       auto pkg = Package(key, info);
       this.packages ~= pkg;
     }
@@ -118,6 +125,7 @@ class PackageConfigure
         item["rename"] = info.rename;
       }
       item["installer"] = info.installer;
+      item["extract"] = info.extract;
 
       result[p.name] = item;
     }
@@ -130,5 +138,4 @@ class PackageConfigure
     // remove 'Z' (YYYY-MM-DDThh:mm:ssZ -> YYYY-MM-DDThh:mm:ss)
     return s.length > 0 ? DateTime.fromISOExtString(s.replace("Z", "")) : DateTime();
   }
-
 }

@@ -57,6 +57,7 @@ void main(string[] args)
     const auto destination = info.destination;
     const auto rename = info.rename;
     const auto installer = info.installer;
+    const auto extract = info.extract;
 
     auto extract_to = destination.length > 0 ? destination : Config.download_dest;
 
@@ -106,6 +107,7 @@ void main(string[] args)
 
         if (!Config.download_only && !Config.install_only)
         {
+          
           FileUtils.mkdir_if_not_exists(extract_to);
 
           const auto file_type = FileUtils.analyze(dl_dest_path);
@@ -114,6 +116,27 @@ void main(string[] args)
           switch (file_type)
           {
           case FileUtils.FileType.Zip:
+            // | extract? | rename? | extract | copy | rename |
+            // | -------- | ------- | ------- | ---- | ------ |
+            // | x        | x       | x       | o    | x      |
+            // | x        | o       | x       | o    | o      |
+            // | o        | x       | o       | x    | x      |
+            // | o        | o       | o       | x    | o      |
+            if (!extract)
+            {
+              logger.info("skip extract. because specified false to extract option.");
+              logger.trace("* copy mode");
+
+              auto from_path = dl_dest_path;
+              auto to_path = buildPath(destination, rename);
+              logger.trace(format("from = %s, to=%s", from_path, to_path));
+
+              result = FileUtils.copy(from_path, to_path);
+
+              continue;
+            }
+
+            logger.trace("* extract mode");
             logger.trace(format("zip dir: %s", FileUtils.dirname_zip(dl_dest_path)));
             if (rename.length > 0)
             {
@@ -163,6 +186,27 @@ void main(string[] args)
         switch (file_type)
         {
           case FileUtils.FileType.Zip:
+            // | extract? | rename? | extract | copy | rename |
+            // | -------- | ------- | ------- | ---- | ------ |
+            // | x        | x       | x       | o    | x      |
+            // | x        | o       | x       | o    | o      |
+            // | o        | x       | o       | x    | x      |
+            // | o        | o       | o       | x    | o      |
+            if (!extract)
+            {
+              logger.info("skip extract. because specified false to extract option.");
+              logger.trace("* copy mode");
+
+              auto from_path = extract_to;
+              auto to_path = buildPath(destination, rename);
+              logger.trace(format("from = %s, to=%s", from_path, to_path));
+
+              result = FileUtils.copy(from_path, to_path);
+
+              continue;
+            }
+
+
             logger.trace(format("zip dir: %s", FileUtils.dirname_zip(e.name)));
             if (rename.length > 0)
             {
