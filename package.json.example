@@ -1,15 +1,35 @@
 {
     "bat": {
-        "destination": "M:\\apps",
+        "destination": "M:\\apps\\",
+        "extract": true,
         "filename": "^bat-.*-x86_64-pc-windows-msvc.zip$",
         "install": "2021-07-13T10:01:53",
-        "rename": "bat",
+        "installer": false,
         "repository": "sharkdp\/bat"
     },
+    "plantuml": {
+        "destination": "M:\\apps\\plantuml\\",
+        "extract": false,
+        "filename": "^plantuml-.+[0-9].jar",
+        "install": "2020-10-08T22:11:13",
+        "installer": false,
+        "rename": "plantuml.jar",
+        "repository": "plantuml\/plantuml"
+    },
     "vim_win32_installer": {
-        "destination": "M:\\apps",
+        "destination": "M:\\apps\\",
+        "extract": true,
         "filename": "gvim_.*_x64.zip$",
-        "install": "2021-07-17T22:10:22",
+        "install": "2021-10-16T22:11:44",
+        "installer": false,
         "repository": "vim\/vim-win32-installer"
+    },
+    "winmerge": {
+        "destination": "M:\\apps\\",
+        "extract": true,
+        "filename": "^winmerge-.*-x64-exe.zip$",
+        "install": "2021-07-25T08:52:15",
+        "installer": false,
+        "repository": "WinMerge\/winmerge"
     }
 }
